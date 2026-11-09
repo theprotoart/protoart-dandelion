@@ -1,0 +1,38 @@
+# build output (publish DMGs as GitHub Release assets, not in the repo)
+.build/
+.swiftpm/
+dist/
+*.app/
+*.dmg
+*.dmg.sha256
+*.iconset/
+
+# build and helper leftovers (contain local paths)
+build-log.txt
+*-log.txt
+*.log
+.build-out*.txt
+run.sh
+job.sh
+cmd.sh
+out.log
+gitleaks-*.json
+
+# secrets that must never be committed
+.env
+.env.*
+*.pem
+*.p12
+*.key
+*.cer
+*.mobileprovision
+
+# system and editor files
+.DS_Store
+.idea/
+.vscode/
+*.swp
+.pd-repo.tgz
+
+# macOS resource-fork files
+._*
