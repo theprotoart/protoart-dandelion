@@ -21,6 +21,10 @@ final class SpaceLensModel: ObservableObject {
     var selectedSize: Int64 { nodes.filter { selection.contains($0.url) }.compactMap(\.size).reduce(0, +) }
 
     func toggle(_ node: LensNode) {
+        if FS.isProtected(node.url) && !selection.contains(node.url) {
+            status = "“\(node.name)” is a protected folder. Open it to remove what's inside."
+            return
+        }
         if selection.contains(node.url) { selection.remove(node.url) } else { selection.insert(node.url) }
     }
 
@@ -33,7 +37,7 @@ final class SpaceLensModel: ObservableObject {
         for url in gone { cache.removeValue(forKey: url) }
         for ancestor in path { cache.removeValue(forKey: ancestor) }
         selection.subtract(gone)
-        status = result.summary + " Everything went to the Trash."
+        status = result.clean ? result.summary + " Everything went to the Trash." : result.summary
     }
 
     /// Sizes already measured this session, so going back up is instant.

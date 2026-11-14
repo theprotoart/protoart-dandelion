@@ -158,6 +158,6 @@ final class LargeFilesModel: ObservableObject {
         let result = await Task.detached(priority: .userInitiated) { FS.remove(targets, permanently: false) }.value
         files.removeAll { !FS.exists($0.url) }
         selection = []
-        status = result.summary + " Items went to the Trash."
+        status = result.clean ? result.summary + " Items went to the Trash." : result.summary
     }
 }

@@ -36,3 +36,6 @@ gitleaks-*.json
 
 # macOS resource-fork files
 ._*
+
+# local audit scratch files
+.audit/

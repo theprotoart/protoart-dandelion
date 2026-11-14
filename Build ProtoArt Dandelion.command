@@ -81,7 +81,10 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 PLIST
 
 step "5/5 Signing"
-codesign --force --deep --sign - "$APP" || fail "ad-hoc signing failed"
+# Hardened runtime: macOS refuses to load other people's code into Dandelion (DYLD_INSERT_LIBRARIES and
+# friends), so nothing can borrow the Full Disk Access you give it.
+codesign --force --sign - --options runtime --entitlements "$ROOT/Dandelion.entitlements" "$APP" || fail "ad-hoc signing failed"
+codesign -d --verbose=2 "$APP" 2>&1 | grep -q 'runtime' || fail "hardened runtime missing from the signature"
 echo "App size: $(du -sh "$APP" | cut -f1)"
 echo
 echo "STATUS: OK  →  $APP"

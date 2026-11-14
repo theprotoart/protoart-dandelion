@@ -77,7 +77,8 @@ final class UninstallerModel: ObservableObject {
         guard let app = selectedApp else { return }
         isFindingLeftovers = true
         leftoverTask = Task {
-            let found = await Task.detached(priority: .userInitiated) { Self.findLeftovers(for: app) }.value
+            let others = Set(apps.compactMap { $0.bundleID?.lowercased() }).subtracting([app.bundleID?.lowercased() ?? ""])
+            let found = await Task.detached(priority: .userInitiated) { Self.findLeftovers(for: app, otherBundleIDs: others) }.value
             guard !Task.isCancelled, selectedAppID == app.url else { return }
             leftovers = found
             selectedLeftovers = Set(found.map(\.url))
@@ -102,7 +103,7 @@ final class UninstallerModel: ObservableObject {
             selectedLeftovers = []
         }
         needsPermissions = !result.failures.isEmpty && !result.cancelled
-        status = result.failures.isEmpty
+        status = result.clean
             ? result.summary + " Everything went to the Trash, so you can still put it back."
             : result.summary
     }
@@ -123,7 +124,7 @@ final class UninstallerModel: ObservableObject {
         orphans.removeAll { !FS.exists($0.url) }
         selectedOrphans = []
         needsPermissions = !result.failures.isEmpty && !result.cancelled
-        status = result.failures.isEmpty ? result.summary + " Everything went to the Trash." : result.summary
+        status = result.clean ? result.summary + " Everything went to the Trash." : result.summary
     }
 
     /// Support folders named after a bundle ID that nothing installed on this Mac uses any more.
@@ -251,7 +252,8 @@ final class UninstallerModel: ObservableObject {
     }
 
     /// Looks for support files the app left in ~/Library, matched by bundle ID or exact app name.
-    nonisolated static func findLeftovers(for app: AppInfo) -> [Leftover] {
+    nonisolated static func findLeftovers(for app: AppInfo, otherBundleIDs: Set<String> = [],
+                                          library: URL = FS.library) -> [Leftover] {
         let folders = [
             "Application Support", "Caches", "Preferences", "Containers", "Group Containers",
             "Saved Application State", "Logs", "HTTPStorages", "WebKit", "Cookies",
@@ -263,10 +265,17 @@ final class UninstallerModel: ObservableObject {
         // Short or generic names would match unrelated folders, so only use names of 4+ characters.
         let names = Set([appName, fileName].filter { $0.count >= 4 })
 
+        // Another installed app whose ID starts with this one (com.foo.app.beta next to com.foo.app):
+        // its files also start with this ID, so they must not be counted as this app's leftovers.
+        let siblings = bid.map { b in otherBundleIDs.filter { $0 != b && $0.hasPrefix(b + ".") } } ?? []
+        func belongsToSibling(_ n: String) -> Bool {
+            siblings.contains { n == $0 || n.hasPrefix($0 + ".") || n.hasSuffix("." + $0) }
+        }
+
         var result: [Leftover] = []
         let fda = FS.hasFullDiskAccess()
         for folder in folders {
-            let dir = FS.library.appendingPathComponent(folder)
+            let dir = library.appendingPathComponent(folder)
             for child in FS.children(of: dir) {
                 let n = child.lastPathComponent.lowercased()
                 var match = names.contains(n)
@@ -276,7 +285,7 @@ final class UninstallerModel: ObservableObject {
                         || n.hasPrefix(bid + ".")      // com.foo.app.plist, com.foo.app.savedState, helpers
                         || n.hasSuffix("." + bid)      // TEAMID.com.foo.app group containers
                 }
-                if match {
+                if match && !belongsToSibling(n) {
                     result.append(Leftover(url: child, size: FS.safeSize(of: child, fullDiskAccess: fda), location: folder))
                 }
             }

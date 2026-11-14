@@ -149,6 +149,8 @@ final class JunkModel: ObservableObject {
         for root in cat.roots {
             // Mail's folder lives in its private container: only with Full Disk Access (no prompt, no stall).
             if !fda && FS.isOtherAppData(root) { continue }
+            // A cache folder replaced by a link (to Documents, say) must not have its target offered as junk.
+            if FS.isSymlink(root) || FS.passesThroughSymlink(root) { continue }
             for child in FS.children(of: root) {
                 if let ownCache, child.lastPathComponent == ownCache { continue }
                 if let exts = cat.extensions, !exts.contains(child.pathExtension.lowercased()) { continue }
@@ -176,6 +178,8 @@ final class JunkModel: ObservableObject {
             r.removed += t.removed
             r.bytes += t.bytes
             r.failures += t.failures
+            r.refused += t.refused
+            r.cancelled = r.cancelled || t.cancelled
             return r
         }.value
 
