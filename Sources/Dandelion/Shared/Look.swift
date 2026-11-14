@@ -69,12 +69,19 @@ struct Palette {
     let powder: Bool
     /// Knob cap colours, used in order (powder skin: blue, yellow, orange, red, green, black).
     let knobs: [Color]
+    /// Retro lettering: amber glowing screens with scanlines and period typefaces.
+    /// Off ("Clean"): crisp white system text on plain dark screens, easier to read.
+    let retro: Bool
 
-    static var current = Palette(skin: .powder, dark: false)
+    /// Text colour inside the black screens.
+    var screen: Color { retro ? amber : Color(hex: 0xf1f2f4) }
 
-    init(skin: Skin, dark: Bool) {
+    static var current = Palette(skin: .powder, dark: false, retro: false)
+
+    init(skin: Skin, dark: Bool, retro: Bool = false) {
         self.skin = skin
         self.dark = dark
+        self.retro = retro
         powder = skin == .powder
         knobs = skin != .powder ? []
             : dark
@@ -152,6 +159,8 @@ struct Palette {
 final class Look: ObservableObject {
     @Published var skin: Skin { didSet { persist(); refresh() } }
     @Published var faceplate: Faceplate { didSet { persist(); refresh() } }
+    /// Retro amber lettering (true) or clean, easy-to-read text (false, the default).
+    @Published var retroText: Bool { didSet { persist(); refresh() } }
     @Published private(set) var palette: Palette
 
     private var observer: NSObjectProtocol?
@@ -160,9 +169,11 @@ final class Look: ObservableObject {
         let d = UserDefaults.standard
         let skin = Skin(rawValue: d.string(forKey: "look.skin") ?? "") ?? .powder
         let face = Faceplate(rawValue: d.string(forKey: "look.faceplate") ?? "") ?? .light
+        let retro = d.bool(forKey: "look.retroText")
         self.skin = skin
         self.faceplate = face
-        let p = Palette(skin: skin, dark: Look.resolveDark(face))
+        self.retroText = retro
+        let p = Palette(skin: skin, dark: Look.resolveDark(face), retro: retro)
         palette = p
         Palette.current = p
         observer = DistributedNotificationCenter.default().addObserver(
@@ -172,15 +183,16 @@ final class Look: ObservableObject {
         }
     }
 
-    var signature: String { "\(palette.skin.rawValue)-\(palette.dark)" }
+    var signature: String { "\(palette.skin.rawValue)-\(palette.dark)-\(palette.retro)" }
 
     private func persist() {
         UserDefaults.standard.set(skin.rawValue, forKey: "look.skin")
         UserDefaults.standard.set(faceplate.rawValue, forKey: "look.faceplate")
+        UserDefaults.standard.set(retroText, forKey: "look.retroText")
     }
 
     private func refresh() {
-        let p = Palette(skin: skin, dark: Look.resolveDark(faceplate))
+        let p = Palette(skin: skin, dark: Look.resolveDark(faceplate), retro: retroText)
         Palette.current = p
         palette = p
     }

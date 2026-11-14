@@ -22,6 +22,14 @@ struct SetupCard: View {
                  : "Light is brushed aluminium with painted trim; Dark is black anodised. Match macOS follows your system.")
                 .font(Rack.serif(12.5)).foregroundStyle(Rack.cardInk.opacity(0.75))
 
+            CardHeading(text: "Lettering").padding(.top, 6)
+            RackSelector(options: [(label: "Clean · easy to read", value: false), (label: "Retro · amber screens", value: true)],
+                         selection: $look.retroText, height: 28, fontSize: 11)
+            Text(look.retroText
+                 ? "Retro: glowing amber screens with scanlines and vintage typefaces."
+                 : "Clean: crisp white text on plain dark screens, in the Mac's own typeface.")
+                .font(Rack.serif(12.5)).foregroundStyle(Rack.cardInk.opacity(0.75))
+
             CardHeading(text: "Colour theme").padding(.top, 6)
             HStack(spacing: 8) {
                 ForEach(Skin.allCases) { skin in
@@ -54,7 +62,7 @@ struct SetupCard: View {
                     .keyboardShortcut(.defaultAction)
             }
         }
-        .frame(width: 620, height: 560)
+        .frame(width: 620, height: 650)
         .padding(14)
         .padding(.top, 14)
         .background(RackSurface().ignoresSafeArea())

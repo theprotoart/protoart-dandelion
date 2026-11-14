@@ -34,7 +34,9 @@ for these; the app has buttons that open the right page).
 - **Login Items:** see and switch off launch agents that start with your Mac.
 - **Menu-bar monitor:** CPU, memory and free disk at a glance.
 - **Looks:** blue or burnt-orange powder coat (Light / Dark / follow macOS), plus Amber, Cream, Slate and
-  Ember skins.
+  Ember skins. **Lettering:** Clean (easy to read) or Retro (glowing amber screens).
+- **Safety:** removals go to the Trash first, critical folders are protected, and the app is signed with the
+  hardened runtime. See SECURITY.md for the full audit; run `Run Security Tests.command` to check it yourself.
 
 ## Requirements
 
@@ -47,6 +49,7 @@ Needs Apple's Command Line Tools (`xcode-select --install`).
 ```bash
 bash "Build ProtoArt Dandelion.command"     # or double-click it
 bash "Make DMG for friends.command"         # or double-click it
+bash "Run Security Tests.command"           # security and safety tests
 ```
 
 The Swift source is in `Sources/Dandelion/`; the icon is drawn by `tools/make-icon.swift`.

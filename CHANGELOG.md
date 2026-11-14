@@ -1,6 +1,15 @@
 # Changelog
 
-## Unreleased (security audit)
+## 1.0.0-beta4
+
+Easier to read
+- New **Lettering** setting (SETUP): **Clean** (the new default: white text in the Mac's own typeface on plain
+  dark screens) or **Retro** (the original glowing amber screens with scanlines).
+- Leftovers of removed apps are grouped by maker ("Leftovers from DxO") and show the app's name, with the
+  folder name underneath. One switch per group ticks them all.
+- The Uninstaller says when it's waiting for Finder's password prompt, and can't be pressed twice.
+
+Security audit
 
 - Signed with the hardened runtime, so no other program can load code into Dandelion and use its
   Full Disk Access.

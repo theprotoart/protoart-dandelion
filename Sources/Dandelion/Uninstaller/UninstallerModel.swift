@@ -15,6 +15,9 @@ struct Leftover: Identifiable, Hashable, Sendable {
     let url: URL
     let size: Int64
     let location: String
+    /// For leftovers of removed apps: the app and maker worked out from the folder name.
+    var app: String? = nil
+    var vendor: String? = nil
 }
 
 @MainActor
@@ -29,6 +32,9 @@ final class UninstallerModel: ObservableObject {
     @Published var status: String?
     /// The last removal left something behind: show the Settings buttons.
     @Published var needsPermissions = false
+    /// A removal is running (it may be waiting for Finder's password prompt).
+    @Published var isWorking = false
+    static let workingMessage = "Moving to the Trash… If Finder asks for your Mac password, type it there."
 
     enum Mode: String, CaseIterable { case apps = "Applications", orphans = "Leftovers of Removed Apps" }
     @Published var mode: Mode = .apps
@@ -94,6 +100,10 @@ final class UninstallerModel: ObservableObject {
         }
         let targets = [(url: app.url, size: app.size)]
             + leftovers.filter { selectedLeftovers.contains($0.url) }.map { (url: $0.url, size: $0.size) }
+        guard !isWorking else { return }
+        isWorking = true
+        status = Self.workingMessage
+        defer { isWorking = false }
         let result = await Task.detached(priority: .userInitiated) { FS.remove(targets, permanently: false) }.value
 
         if !FS.exists(app.url) {
@@ -120,6 +130,10 @@ final class UninstallerModel: ObservableObject {
 
     func removeOrphans() async {
         let targets = orphans.filter { selectedOrphans.contains($0.url) }.map { (url: $0.url, size: $0.size) }
+        guard !isWorking else { return }
+        isWorking = true
+        status = Self.workingMessage
+        defer { isWorking = false }
         let result = await Task.detached(priority: .userInitiated) { FS.remove(targets, permanently: false) }.value
         orphans.removeAll { !FS.exists($0.url) }
         selectedOrphans = []
@@ -148,10 +162,20 @@ final class UninstallerModel: ObservableObject {
                       !lower.hasPrefix("group.") else { continue }
                 if known.contains(lower) || known.contains(where: { lower.hasPrefix($0 + ".") }) { continue }
                 if NSWorkspace.shared.urlForApplication(withBundleIdentifier: parts.joined(separator: ".")) != nil { continue }
-                result.append(Leftover(url: child, size: FS.safeSize(of: child, fullDiskAccess: fda), location: folder))
+                let n = LeftoverNames.name(forFolder: child.lastPathComponent)
+                result.append(Leftover(url: child, size: FS.safeSize(of: child, fullDiskAccess: fda), location: folder,
+                                       app: n.app, vendor: n.vendor))
             }
         }
         return result.sorted { $0.size > $1.size }
+    }
+
+    /// Leftovers grouped by maker, biggest group first.
+    var orphanGroups: [(vendor: String, items: [Leftover], size: Int64)] {
+        Dictionary(grouping: orphans) { $0.vendor ?? "Unknown maker" }
+            .map { (vendor: $0.key, items: $0.value.sorted { ($0.app ?? "", $1.size) < ($1.app ?? "", $0.size) },
+                    size: $0.value.reduce(0) { $0 + $1.size }) }
+            .sorted { $0.size != $1.size ? $0.size > $1.size : $0.vendor < $1.vendor }
     }
 
     /// Every bundle ID that ships inside an installed app — the app itself, its extensions, XPC services,

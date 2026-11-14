@@ -122,7 +122,7 @@ struct UninstallerView: View {
                     if model.needsPermissions { PermissionButtons() }
                     Button("Uninstall · \(FS.format(model.totalRemovalSize))") { confirm = true }
                         .buttonStyle(RackButtonStyle(kind: .danger, height: 40, fontSize: 14))
-                        .disabled(model.isFindingLeftovers)
+                        .disabled(model.isFindingLeftovers || model.isWorking)
                 }
             }
         } else {
@@ -162,17 +162,22 @@ struct OrphansView: View {
                 } else {
                     ScrollView {
                         LazyVStack(alignment: .leading, spacing: 2) {
-                            ForEach(model.orphans) { item in
-                                Toggle(isOn: Binding(
-                                    get: { model.selectedOrphans.contains(item.url) },
-                                    set: { on in
-                                        if on { model.selectedOrphans.insert(item.url) } else { model.selectedOrphans.remove(item.url) }
-                                    })) {
-                                    AmberRow(name: item.url.lastPathComponent, detail: "~/Library/\(item.location)",
-                                             value: FS.format(item.size))
+                            ForEach(model.orphanGroups, id: \.vendor) { group in
+                                groupHeader(group.vendor, group.items, group.size)
+                                ForEach(group.items) { item in
+                                    Toggle(isOn: Binding(
+                                        get: { model.selectedOrphans.contains(item.url) },
+                                        set: { on in
+                                            if on { model.selectedOrphans.insert(item.url) } else { model.selectedOrphans.remove(item.url) }
+                                        })) {
+                                        AmberRow(name: item.app ?? item.url.lastPathComponent,
+                                                 detail: "\(item.url.lastPathComponent)  ·  ~/Library/\(item.location)",
+                                                 value: FS.format(item.size))
+                                    }
+                                    .toggleStyle(LEDToggleStyle())
+                                    .padding(.leading, 12)
+                                    .contextMenu { Button("Show in Finder") { FS.reveal([item.url]) } }
                                 }
-                                .toggleStyle(LEDToggleStyle())
-                                .contextMenu { Button("Show in Finder") { FS.reveal([item.url]) } }
                             }
                         }
                         .padding(14)
@@ -185,7 +190,7 @@ struct OrphansView: View {
                 if model.needsPermissions { PermissionButtons() }
                 Button("Remove · \(FS.format(model.selectedOrphanSize))") { confirm = true }
                     .buttonStyle(RackButtonStyle(kind: .primary, height: 40, fontSize: 14))
-                    .disabled(model.selectedOrphans.isEmpty)
+                    .disabled(model.selectedOrphans.isEmpty || model.isWorking)
             }
         }
         .task { if !model.hasScannedOrphans { await model.scanOrphans() } }
@@ -193,6 +198,26 @@ struct OrphansView: View {
             Button("Move to Trash", role: .destructive) { Task { await model.removeOrphans() } }
             Button("Cancel", role: .cancel) {}
         }
+    }
+}
+
+extension OrphansView {
+    /// "Leftovers from DxO · 4 items · 48 KB", with one switch for the whole group.
+    func groupHeader(_ vendor: String, _ items: [Leftover], _ size: Int64) -> some View {
+        let urls = Set(items.map(\.url))
+        return Toggle(isOn: Binding(
+            get: { urls.isSubset(of: model.selectedOrphans) },
+            set: { on in if on { model.selectedOrphans.formUnion(urls) } else { model.selectedOrphans.subtract(urls) } })) {
+            HStack {
+                AmberText("LEFTOVERS FROM \(vendor.uppercased())", size: 12, weight: .bold)
+                AmberText("\(items.count) item\(items.count == 1 ? "" : "s")", size: 11).opacity(0.6)
+                Spacer()
+                AmberText(FS.format(size), size: 12, weight: .bold).opacity(0.8)
+            }
+        }
+        .toggleStyle(LEDToggleStyle())
+        .padding(.top, 10).padding(.bottom, 2)
+        .overlay(alignment: .bottom) { Rectangle().fill(Rack.amber.opacity(0.15)).frame(height: 1) }
     }
 }
 

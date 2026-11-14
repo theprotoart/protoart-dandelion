@@ -9,7 +9,7 @@ exec > >(tee "$ROOT/build-log.txt") 2>&1
 APP_NAME="ProtoArt Dandelion"
 BUNDLE_ID="local.protoart.dandelion"
 APP="$ROOT/$APP_NAME.app"
-VERSION="1.0.0-beta3"
+VERSION="1.0.0-beta4"
 step() { printf '\n== %s\n' "$*"; }
 fail() { printf '\nSTATUS: FAILED (%s)\n' "$*"; [ -t 0 ] && read -r -p "Press Return to close this window." _; exit 1; }
 

@@ -7,7 +7,8 @@ import AppKit
 
 enum Rack {
     // theme-dependent (read from the current palette; the window is rebuilt when the look changes)
-    static var amber: Color { Palette.current.amber }
+    static var amber: Color { Palette.current.screen }
+    private static var retro: Bool { Palette.current.retro }
     static var paint: Color { Palette.current.text }
     static var muted: Color { Palette.current.muted }
     static var ink: Color { Palette.current.ink }
@@ -24,12 +25,25 @@ enum Rack {
     static let marker = Color(red: 18 / 255, green: 20 / 255, blue: 44 / 255).opacity(0.9)
     static let tape = Color(hex: 0xeee1bb)
 
-    static func engrave(_ size: CGFloat) -> Font { .custom("DIN Alternate", size: size).weight(.bold) }
-    static func condensed(_ size: CGFloat) -> Font { .custom("DIN Condensed", size: size).weight(.bold) }
-    static func mono(_ size: CGFloat, _ weight: Font.Weight = .regular) -> Font { .custom("Menlo", size: size).weight(weight) }
+    // Retro: period typefaces. Clean: Apple's system font (SF), a touch larger, condensed where space is tight.
+    static func engrave(_ size: CGFloat) -> Font {
+        retro ? .custom("DIN Alternate", size: size).weight(.bold) : .system(size: size, weight: .semibold)
+    }
+    static func condensed(_ size: CGFloat) -> Font {
+        retro ? .custom("DIN Condensed", size: size).weight(.bold)
+              : .system(size: size * 0.92, weight: .semibold).width(.condensed)
+    }
+    static func mono(_ size: CGFloat, _ weight: Font.Weight = .regular) -> Font {
+        retro ? .custom("Menlo", size: size).weight(weight)
+              : .system(size: size + 1, weight: weight == .regular ? .regular : weight)
+    }
     static func brand(_ size: CGFloat) -> Font { .custom("Futura-Bold", size: size) }
-    static func serif(_ size: CGFloat) -> Font { .custom("American Typewriter", size: size) }
-    static func marker(_ size: CGFloat) -> Font { .custom("Marker Felt", size: size) }
+    static func serif(_ size: CGFloat) -> Font {
+        retro ? .custom("American Typewriter", size: size) : .system(size: size)
+    }
+    static func marker(_ size: CGFloat) -> Font {
+        retro ? .custom("Marker Felt", size: size) : .system(size: size, weight: .bold, design: .rounded)
+    }
 }
 
 struct SeededRandom {
@@ -596,8 +610,10 @@ struct GlassWindow<Content: View>: View {
 
     var body: some View {
         content()
-            .background(LinearGradient(colors: [Color(hex: 0x170c03), Color(hex: 0x0d0701)], startPoint: .top, endPoint: .bottom))
-            .overlay { if scanlines { Scanlines().allowsHitTesting(false) } }
+            .background(LinearGradient(colors: Palette.current.retro ? [Color(hex: 0x170c03), Color(hex: 0x0d0701)]
+                                                                     : [Color(hex: 0x1d1f23), Color(hex: 0x15171a)],
+                                       startPoint: .top, endPoint: .bottom))
+            .overlay { if scanlines && Palette.current.retro { Scanlines().allowsHitTesting(false) } }
             .overlay(LinearGradient(colors: [.white.opacity(0.07), .clear], startPoint: .topLeading, endPoint: .init(x: 0.4, y: 0.4))
                 .allowsHitTesting(false))
             .overlay(RoundedRectangle(cornerRadius: cornerRadius).stroke(.black, lineWidth: 4).blur(radius: 3)
@@ -635,7 +651,7 @@ struct AmberText: View {
         Text(text)
             .font(Rack.mono(size, weight))
             .foregroundStyle(c)
-            .shadow(color: c.opacity(0.5), radius: 3)
+            .shadow(color: c.opacity(Palette.current.retro ? 0.5 : 0), radius: 3)
             .lineLimit(1)
     }
 }

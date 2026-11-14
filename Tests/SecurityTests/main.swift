@@ -113,5 +113,25 @@ do {
     check(!fm.fileExists(atPath: marker), "the injected command never ran")
 }
 
+print("Leftover names (which app a leftover came from)")
+do {
+    let cases: [(String, String, String)] = [
+        ("com.topazlabs.TopazVideoEnhanceAI.savedState", "Topaz Video Enhance AI", "Topaz Labs"),
+        ("com.dxo.cep4.app.savedState", "Color Efex Pro 4", "DxO"),
+        ("com.dxo.nik3Installer.savedState", "Nik Collection 3 Installer", "DxO"),
+        ("com.izotope.audioplugins.NEUTRON3.savedState", "Neutron 3", "iZotope"),
+        ("com.adobe.AdobeCrashReport.application.savedState", "Adobe Crash Report", "Adobe"),
+        ("com.WavesAudio.Waves AU Reg Utility.12.0.0.savedState", "Waves AU Reg Utility", "Waves Audio"),
+        ("com.nektony.Funter-SII", "Funter SII", "Nektony"),
+        ("ABCDE12345.com.example.coolapp", "Coolapp", "Example"),
+        ("org.python.IDLE.savedState", "IDLE", "Python"),
+        ("com.acme.widget.helper", "Widget Helper", "Acme")
+    ]
+    for (folder, app, vendor) in cases {
+        let n = LeftoverNames.name(forFolder: folder)
+        check(n.app == app && n.vendor == vendor, "\(folder) -> \(n.app) by \(n.vendor)")
+    }
+}
+
 print(failures == 0 ? "\nAll security tests passed." : "\n\(failures) security test(s) FAILED.")
 exit(failures == 0 ? 0 : 1)

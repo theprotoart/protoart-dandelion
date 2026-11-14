@@ -6,7 +6,7 @@ OUT="$(mktemp -d)"
 echo "== Compiling the tests with the app's own code"
 swiftc -module-name Dandelion -o "$OUT/security-tests" \
   Sources/Dandelion/Shared/FS.swift Sources/Dandelion/Junk/JunkModel.swift \
-  Sources/Dandelion/Uninstaller/UninstallerModel.swift Tests/SecurityTests/main.swift || { echo "FAILED to compile"; exit 1; }
+  Sources/Dandelion/Uninstaller/UninstallerModel.swift Sources/Dandelion/Uninstaller/LeftoverNames.swift Tests/SecurityTests/main.swift || { echo "FAILED to compile"; exit 1; }
 "$OUT/security-tests"; STATUS=$?
 
 APP="$ROOT/ProtoArt Dandelion.app"
