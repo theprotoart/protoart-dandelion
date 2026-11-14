@@ -18,7 +18,7 @@ Security audit
 - Removals refuse paths that run through a symbolic link, and Cleanup ignores a cache folder that is a link.
 - Uninstaller no longer offers another installed app's files when its ID starts with the same name
   (com.foo.app.beta beside com.foo.app).
-- New `Run Security Tests.command` with 45 checks.
+- New `Run Security Tests.command` with 54 checks.
 
 ## 1.0.0-beta3
 

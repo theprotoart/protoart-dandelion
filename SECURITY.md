@@ -36,7 +36,7 @@ Please report security problems privately with GitHub's **Report a vulnerability
 Double-click **Run Security Tests.command** (needs Apple's Command Line Tools). It compiles the tests in
 `Tests/SecurityTests/` together with the app's own source files and works only in a temporary folder.
 If a built app is present, it also checks the signature and tries to load outside code into the app.
-Last run (14 Nov 2026, macOS 26.2): **45 of 45 passed.**
+Last run (14 Nov 2026, macOS 26.2): **54 of 54 passed** (beta4).
 
 ## Audit, 14 November 2026
 
